@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scheduler</title>
+</head>
+
+<body>
+    <div id="settings"></div>
+    <div id="container"></div>
+</body>
+<script>
+    // Times are 24h, minutes are decimals of hour, ex. 30m -> 0.5
+    let schedules = [
+        {
+            name: 'User 1',
+            color: '#ff0000',//red
+            schedule: [
+                { start: 0, end: 9, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 2',
+            color: '#ff0000',// red
+            schedule: [
+                { start: 0, end: 9, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 3',
+            color: '#ff0000',// red
+            schedule: [
+                { start: 1, end: 10, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 4',
+            color: '#008000',// green
+            schedule: [
+                { start: 7.5, end: 16.5, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 5',
+            color: '#000075',// blue
+            schedule: [
+                { start: 8.5, end: 17.5, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 6',
+            color: '#000075',// blue
+            schedule: [
+                { start: 8.5, end: 17.5, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 7',
+            color: '#daa520',// goldenrod
+            schedule: [
+                { start: 10, end: 19, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 8',
+            color: '#daa520',// goldenrod
+            schedule: [
+                { start: 13, end: 22, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+            ]
+        },
+        {
+            name: 'User 9',
+            color: '#800080',// purple
+            schedule: [
+                { start: 15, end: 24, days: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'] },
+                { start: 15, end: 24, days: ['Sat', 'Sun'] },
+            ]
+        },
+        {
+            name: 'User 10',
+            color: '#800080',// purple
+            schedule: [
+                { start: 8, end: 20, days: ['Mon'] },
+                { start: 8, end: 20, days: ['Sat', 'Sun'] },
+            ]
+        },
+        {
+            name: 'User 11',
+            color: '#ff8c00',// darkorange
+            schedule: [
+                { start: 20, end: 24, days: ['Sat', 'Sun'] },
+                { start: 0, end: 8, days: ['Sat', 'Sun'] },
+            ]
+        }
+    ]
+    let dOW = [
+        { day: 'Monday', expanded: true },
+        { day: 'Tuesday', expanded: true },
+        { day: 'Wednesday', expanded: true },
+        { day: 'Thursday', expanded: true },
+        { day: 'Friday', expanded: true },
+        { day: 'Saturday', expanded: true },
+        { day: 'Sunday', expanded: true }
+    ];
+    window.addEventListener('resize', () => {
+        redraw('settings');
+        redraw('container');
+    });
+    window.addEventListener('scroll', () => {
+        if (document.getElementById('user-name')) document.getElementById('user-name').remove();
+    })
+    const redraw = (s) => {
+        section = document.getElementById(s);
+        let empty = section.cloneNode(false);
+        document.body.replaceChild(empty, section);
+        s === 'container' ? drawSchedule() : drawSettings();
+    }
+    const drawSettings = () => {
+        let settings = document.getElementById('settings');
+        schedules.forEach((user, index) => {
+            let userDiv = document.createElement('div');
+            let colorPicker = document.createElement('input');
+            colorPicker.type = 'color';
+            colorPicker.value = user.color;
+            userDiv.appendChild(colorPicker);
+            colorPicker.addEventListener('input', e => {
+                user.color = e.target.value;
+                redraw('container');
+            });
+            let username = document.createElement('p');
+            username.className = 'user-name';
+            const interactUserName = (e) => {
+                let nameInput = document.createElement('input');
+                nameInput.id = 'user-name-input';
+                nameInput.placeholder = user.name;
+                userDiv.replaceChild(nameInput, username);
+                document.getElementById('user-name-input').focus();
+                nameInput.addEventListener('keydown', (e) => {
+                    if (e.code === 'Enter') nameInput.blur();
+                })
+                nameInput.addEventListener('blur', (e) => {
+                    e.target.value.trim().length > 0 ? user.name = e.target.value : user.name = e.target.placeholder;
+                    username.innerText = user.name;
+                    userDiv.replaceChild(username, nameInput);
+                    redraw('container');
+                })
+            }
+            username.addEventListener('click', interactUserName);
+            userDiv.appendChild(username);
+            let addShift = document.createElement('p');
+            addShift.className = 'add-shift';
+            addShift.id = `add-shift-${user.name.replace(' ', '-')}`;
+            addShift.innerText = '+';
+            addShift.addEventListener('click', e => {
+                user.schedule.push({ start: 0, end: 24, days: [] });
+                redraw('settings');
+                redraw('container');
+            });
+            let deleteUser = document.createElement('p');
+            deleteUser.className = 'delete-user';
+            deleteUser.id = `delete-user-${user.name.replace(' ', '-')}`;
+            deleteUser.innerText = 'x';
+            deleteUser.addEventListener('click', e => {
+                schedules.splice(index, 1);
+                redraw('settings');
+                redraw('container');
+            });
+            userDiv.appendChild(deleteUser);
+            userDiv.appendChild(addShift);
+            user.schedule.forEach((shift, index) => {
+                let shiftDiv = document.createElement('div');
+                let startInput = document.createElement('input');
+                startInput.type = 'time';
+                startInput.step = '1800';
+                let startTimeArr = shift.start.toString().split('.');
+                startInput.value = `${(startTimeArr[0].length === 1 ? '0' : '') + startTimeArr[0]}:${startTimeArr.length > 1 ? (startTimeArr[1] / 10) * 60 : '00'}`;
+                startInput.className = 'shift-start';
+                startInput.shift = 'start';
+                let endInput = document.createElement('input');
+                endInput.type = 'time';
+                endInput.step = '1800';
+                let endTimeArr = shift.end.toString().split('.');
+                endInput.value = shift.end === 24 ? '00:00' : `${(endTimeArr[0].length === 1 ? '0' : '') + endTimeArr[0]}:${endTimeArr.length > 1 ? (endTimeArr[1] / 10) * 60 : '00'}`;
+                endInput.className = 'shift-end';
+                endInput.shift = 'end';
+                [startInput, endInput].forEach(input => {
+                    input.addEventListener('change', e => {
+                        let startVal, endVal, startParsed, endParsed;
+                        let oppInput = e.target.parentNode.querySelector(e.target.shift === 'start' ? '.shift-end' : '.shift-start');
+                        startVal = e.target.shift === 'start' ? e.target.value.split(':') : oppInput.value.split(':');
+                        endVal = e.target.shift === 'start' ? oppInput.value.split(':') : e.target.value.split(':');
+                        startParsed = parseInt(startVal[0]) + (startVal[1] === '00' ? 0 : parseInt(startVal[1]) / 60);
+                        endParsed = parseInt(endVal[0]) + (endVal[1] === '00' ? 0 : parseInt(endVal[1]) / 60);
+                        oppInput[oppInput.shift === 'start' ? 'max' : 'min'] = e.target.value;
+                        if (startParsed >= endParsed && endParsed !== 0) {
+                            let startArr = (endParsed - .5).toString().split('.');
+                            let endArr = (startParsed + .5).toString().split('.');
+                            e.target.value = e.target.shift === 'start' ? `${(startArr[0].length === 1 ? '0' : '') + startArr[0]}:${startArr.length > 1 ? (startArr[1] / 10) * 60 : '00'}` : endParsed === 24 ? '00:00' : `${(endArr[0].length === 1 ? '0' : '') + endArr[0]}:${endArr.length > 1 ? (endArr[1] / 10) * 60 : '00'}`
+                            shift[e.target.shift] = e.target.shift === 'start' ? endParsed - .5 : startParsed + .5;
+                        }
+                        if (startParsed < endParsed || endParsed === 0) shift[e.target.shift] = e.target.value === '00:00' && e.target.shift === 'end' ? 24 : e.target.shift === 'end' ? endParsed : startParsed;
+                        redraw('container');
+                    })
+                });
+                shiftDiv.appendChild(startInput);
+                shiftDiv.appendChild(endInput);
+                shiftDiv.id = `${index}-shift-row-${user.name.split(' ').join('-')}`;
+                ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].forEach(day => {
+                    let dayLabel = document.createElement('label');
+                    dayLabel.for = `${day}-${index}-${user.name.split(' ').join('-')}`;
+                    dayLabel.innerText = window.innerWidth < 1200 ? day.substr(0, 1) : day;
+                    dayLabel.addEventListener('click', e => {
+                        document.getElementById(e.target.for).click();
+                        e.target.classList.toggle('day-checked');
+                    })
+                    let dayInput = document.createElement('input');
+                    dayInput.type = 'checkbox';
+                    dayInput.id = `${day}-${index}-${user.name.split(' ').join('-')}`;
+                    dayInput.checked = shift.days.includes(day);
+                    if (dayInput.checked) dayLabel.classList.add('day-checked');
+                    dayInput.addEventListener('click', e => {
+                        e.target.checked ? shift.days.push(day) : shift.days.splice(shift.days.indexOf(day), 1);
+                        redraw('container');
+                    });
+                    shiftDiv.appendChild(dayLabel);
+                    shiftDiv.appendChild(dayInput);
+                });
+                userDiv.appendChild(shiftDiv);
+                let deleteShift = document.createElement('p');
+                deleteShift.className = 'delete-shift';
+                deleteShift.id = `${index}-delete-shift-${user.name.split(' ').join('-')}`;
+                deleteShift.innerText = 'x';
+                deleteShift.addEventListener('click', e => {
+                    user.schedule.splice(parseInt(e.target.id.split('-')[0]), 1);
+                    redraw('settings');
+                    redraw('container');
+                });
+                shiftDiv.appendChild(deleteShift);
+            })
+            username.innerText = user.name;
+            settings.appendChild(userDiv);
+        })
+        let addUser = document.createElement('p');
+        addUser.id = 'add-user';
+        addUser.innerText = 'Add User +';
+        addUser.addEventListener('click', e => {
+            schedules.push(
+                {
+                    name: 'New User',
+                    color: '#ff8c00',// darkorange
+                    schedule: [
+                        { start: 0, end: 24, days: [] }
+                    ]
+                }
+            );
+            redraw('settings');
+            redraw('container');
+        });
+        settings.appendChild(addUser);
+    }
+    const drawSchedule = () => {
+        let container = document.getElementById('container');
+        dOW.forEach(d => {
+            let timeline = document.createElement('div');
+            timeline.className = 'timeline';
+            for (let i = 0; i < 24; i++) {
+                let time = document.createElement('div');
+                let timeText = document.createElement('p');
+                timeText.innerText = i > 12 ? `${i - 12}pm` : i > 0 ? `${i}am` : `12am`;
+                time.appendChild(timeText);
+                timeline.appendChild(time);
+            };
+            let day = document.createElement('div');
+            day.id = d.day;
+            day.className = 'day';
+            let dropdown = document.createElement('div');
+            dropdown.id = `${d.day}-dropdown`;
+            let dayHeader = document.createElement('h3');
+            dayHeader.innerText = d.day;
+            dayHeader.className = 'day-header';
+            dayHeader.open = d.expanded;
+            let arrow = document.createElement('span');
+            arrow.className = d.expanded ? 'arrow down' : 'arrow right';
+            arrow.id = `${d.day}-arrow`;
+            dayHeader.addEventListener('click', e => {
+                dayHeader.open = !dayHeader.open;
+                d.expanded = dayHeader.open;
+                arrow.className = dayHeader.open ? 'arrow down' : 'arrow right';
+                dropdown.style.display = dayHeader.open ? 'block' : 'none';
+            })
+            dayHeader.appendChild(arrow);
+            container.appendChild(dayHeader);
+            dropdown.appendChild(timeline);
+            dropdown.appendChild(day);
+            dropdown.style.display = dayHeader.open ? 'block' : 'none';
+            container.appendChild(dropdown);
+        });
+        schedules.forEach(user => {
+            dOW.forEach(date => {
+                let day = date.day.substr(0, 3);
+                let daySchedule = user.schedule.filter(s => s.days.includes(day)).sort((a, b) => a.start - b.start || a.end - b.end);
+                let id = `${date.day}-schedule-${user.name.split(' ').join('-')}`;
+                let shift = document.createElement('div');
+                shift.className = 'schedule';
+                shift.id = id;
+                let blockArr = [];
+                let overlap = false;
+                if (daySchedule.length > 0) {
+                    let i = 0;
+                    const checkOverlap = (i) => {
+                        if (i > 0) if (blockArr.reduce((a, b) => a + b) === 24) return;
+                        if (i === 0) blockArr.push(daySchedule[i].start);
+                        if (daySchedule.length === 1 && i === 0) {
+                            blockArr.push(daySchedule[0].end - daySchedule[0].start);
+                            blockArr.push(24 - daySchedule[0].end);
+                        }
+                        if (daySchedule.length > 1 && i < daySchedule.length - 1) {
+                            if (daySchedule[i].end >= daySchedule[i + 1].start) {
+                                overlap = true;
+                                daySchedule[i + 1].end >= daySchedule[i].end ? blockArr.push(daySchedule[i + 1].end - daySchedule[i].start) : blockArr.push(daySchedule[i].end - daySchedule[i].start);
+                                daySchedule[i + 1].end >= daySchedule[i].end ? blockArr.push(24 - daySchedule[i + 1].end) : blockArr.push(24 - daySchedule[i].end);
+                            }
+                            else {
+                                blockArr.push(daySchedule[i].end - daySchedule[i].start);
+                                blockArr.push(daySchedule[i + 1].start - daySchedule[i].end);
+                            }
+                        }
+                        if (daySchedule.length > 1 && i === daySchedule.length - 1 && !overlap) {
+                            blockArr.push(daySchedule[i].end - daySchedule[i].start);
+                            blockArr.push(24 - daySchedule[i].end);
+                        }
+                        if (i + 1 < daySchedule.length) {
+                            i++;
+                            checkOverlap(i);
+                        }
+                    }
+                    if (i === 0) checkOverlap(i);
+                    blockArr.forEach((hours, index) => {
+                        let block = document.createElement('div');
+                        shift.appendChild(block);
+                        if (index % 2 === 1) {
+                            block.style.backgroundColor = user.color;
+                            block.className = 'shift';
+                            block.addEventListener('mouseenter', e => {
+                                let coord = e.target.getBoundingClientRect();
+                                let userName = document.createElement('p');
+                                userName.id = 'user-name';
+                                userName.innerText = user.name;
+                                block.appendChild(userName);
+                                let userNameWidth = userName.getBoundingClientRect().width;
+                                userName.style.top = `${coord.y}px`;
+                                userName.style.left = `${(coord.width / 2) + coord.x - (userNameWidth / 2)}px`;
+                            });
+                            block.addEventListener('mouseleave', e => {
+                                if (document.getElementById('user-name')) document.getElementById('user-name').remove();
+                            })
+                        }
+                        block.style.flexGrow = hours;
+                    });
+                    document.getElementById(date.day).appendChild(shift);
+                }
+            })
+
+        })
+
+        container.style.width = `${(1 - ((window.innerWidth < 1200 ? 350 : 450) / window.innerWidth)) * 100}%`;
+        container.style.marginLeft = `${window.innerWidth < 1200 ? 370 : 470}px`;
+    };
+    drawSettings();
+    drawSchedule();
+</script>
+<style>
+    ::-webkit-scrollbar {
+        left: -110vw;
+    }
+
+    body {
+        padding: 0;
+        background-color: rgba(0, 0, 0, .8);
+        color: white;
+    }
+
+    input[type=time] {
+        background-color: rgba(0, 0, 0, .8);
+        color: white;
+    }
+
+    #container {
+        width: 90%;
+        margin-top: 10px;
+        margin-left: 600px;
+        margin-bottom: 40px;
+    }
+
+    @media screen and (max-width: 900px) {
+        #container {
+            width: 60%;
+        }
+    }
+
+    .schedule,
+    .timeline {
+        display: flex;
+        flex-direction: row;
+        height: 40px;
+        margin-top: 20px;
+    }
+
+    .shift {
+        border-radius: 20px;
+        text-align: center;
+        border-collapse: collapse;
+    }
+
+    #user-name {
+        font-size: small;
+        position: fixed;
+        color: white;
+        font-weight: bold;
+    }
+
+    .timeline {
+        width: 100%;
+        display: flex;
+        margin: 30px 0;
+        height: 50px;
+    }
+
+    .timeline div {
+        border-left: 1px solid white;
+        flex: 1 1 0%;
+        font-size: xx-small;
+        text-align: center;
+        text-orientation: sideways;
+    }
+
+    .timeline div:last-child {
+        border-right: 1px solid white;
+    }
+
+    .timeline p {
+        display: inline-block;
+        transform: rotate(-90deg);
+        margin-top: 17px;
+    }
+
+    .shift-end,
+    input[type=checkbox],
+    label {
+        margin-right: 10px;
+    }
+
+    label {
+        color: gray;
+    }
+
+    .day-checked {
+        color: white;
+    }
+
+    #settings,
+    #container {
+        display: inline-block;
+    }
+
+    body {
+        user-select: none;
+        display: flex;
+        flex-direction: row;
+        justify-content: space-evenly;
+    }
+
+    #settings {
+        position: fixed;
+        top: 10px;
+        left: 20px;
+        max-height: 99vh;
+        overflow-y: auto;
+    }
+
+    #settings p {
+        display: inline-block;
+    }
+
+    .user-name {
+        margin-top: 25px;
+    }
+
+    #user-name-input {
+        background-color: rgba(0, 0, 0, .1);
+        color: white;
+        margin: 23px 0 15px;
+    }
+
+    input[type=color] {
+        margin-right: 15px;
+        width: 27px;
+    }
+
+    .add-shift,
+    .delete-shift,
+    .delete-user {
+        font-weight: bolder;
+        margin: 0 0 0 15px;
+        cursor: pointer;
+        font-family: sans-serif;
+        color: darkgray;
+    }
+
+    .add-shift:hover {
+        color: green;
+    }
+
+    .delete-shift:hover,
+    .delete-user:hover {
+        color: red;
+    }
+
+    .delete-shift {
+        margin-left: 4px;
+        vertical-align: top;
+    }
+
+    .day-header,
+    #add-user,
+    label {
+        cursor: pointer;
+    }
+
+    .arrow {
+        border: solid white;
+        border-width: 0 3px 3px 0;
+        display: inline-block;
+        padding: 3px;
+        margin-left: 10px;
+    }
+
+    .right {
+        transform: rotate(-45deg);
+    }
+
+    .down {
+        margin-top: 5px;
+        vertical-align: top;
+        transform: rotate(45deg);
+    }
+
+    input[type=time] {
+        width: 62px;
+    }
+
+    input[type=time]::-webkit-calendar-picker-indicator {
+        display: none;
+    }
+
+    input[type=time]::-webkit-datetime-edit-ampm-field {
+        margin-left: -5px;
+    }
+
+    #add-user {
+        margin-top: 20px;
+        font-weight: bolder;
+    }
+
+    input[type=checkbox] {
+        position: absolute;
+        left: -100vw;
+    }
+</style>
+
+</html>
